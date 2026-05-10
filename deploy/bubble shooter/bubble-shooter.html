@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zodiac Bubble Shooter</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      background: #0a0a12;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      overflow: hidden;
+      user-select: none;
+      padding-top: 62px;
+    }
+
+    .topnav {
+      position: fixed;
+      left: 0;
+      right: 0;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: rgba(0,0,0,0.38);
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+      backdrop-filter: blur(8px);
+      flex-wrap: wrap;
+    }
+    .topnav a {
+      color: #f0e6d2;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 750;
+      letter-spacing: 0.35px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(240,230,210,0.14);
+      background: rgba(255,255,255,0.06);
+      transition: background .12s ease, transform .06s ease;
+      user-select: none;
+    }
+    .topnav a:hover { background: rgba(255,255,255,0.10); transform: translateY(-1px); }
+    
+    .game-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 500px;
+      padding: 15px 20px;
+      color: #e8d5b7;
+    }
+
+    @media (max-width: 520px) {
+      .game-header {
+        max-width: 100%;
+        padding: 12px 14px;
+      }
+      .game-title { font-size: 14px; letter-spacing: 3px; }
+      .score-value { font-size: 24px; }
+      #nextCanvas { width: 44px; height: 44px; }
+    }
+    
+    .score-panel {
+      text-align: left;
+    }
+    
+    .score-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #8a7a5a;
+    }
+    
+    .score-value {
+      font-size: 28px;
+      font-weight: 300;
+      color: #f0e6d2;
+      text-shadow: 0 0 20px rgba(240, 200, 120, 0.5);
+    }
+    
+    .game-title {
+      font-size: 18px;
+      font-weight: 300;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: #c9a96e;
+      text-shadow: 0 0 30px rgba(201, 169, 110, 0.4);
+    }
+    
+    .next-bubble {
+      text-align: right;
+    }
+    
+    .next-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #8a7a5a;
+      margin-bottom: 5px;
+    }
+    
+    #nextCanvas {
+      width: 50px;
+      height: 50px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(201, 169, 110, 0.2);
+    }
+    
+    .game-container {
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 
+        0 0 60px rgba(100, 80, 140, 0.3),
+        inset 0 0 100px rgba(0,0,0,0.5);
+      max-width: calc(100vw - 18px);
+    }
+    
+    #gameCanvas {
+      display: block;
+      cursor: crosshair;
+      width: min(480px, calc(100vw - 18px));
+      height: auto;
+      touch-action: none;
+    }
+    
+    .game-info {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin-top: 15px;
+      color: #8a7a5a;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .game-over-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(10, 10, 18, 0.95);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+    }
+    
+    .game-over-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    
+    .game-over-text {
+      font-size: 32px;
+      font-weight: 300;
+      letter-spacing: 6px;
+      color: #c9a96e;
+      margin-bottom: 20px;
+      text-shadow: 0 0 40px rgba(201, 169, 110, 0.6);
+    }
+    
+    .final-score {
+      font-size: 48px;
+      font-weight: 200;
+      color: #f0e6d2;
+      margin-bottom: 30px;
+      text-shadow: 0 0 30px rgba(240, 200, 120, 0.5);
+    }
+    
+    .restart-btn {
+      padding: 15px 40px;
+      font-size: 14px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      background: transparent;
+      border: 1px solid #c9a96e;
+      color: #c9a96e;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+    
+    .restart-btn:hover {
+      background: rgba(201, 169, 110, 0.1);
+      box-shadow: 0 0 30px rgba(201, 169, 110, 0.3);
+    }
+    
+    .instructions {
+      position: fixed;
+      bottom: 20px;
+      color: #5a5a6a;
+      font-size: 11px;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+  <div class="topnav">
+    <a href="../h-app.html">Home</a>
+    <a href="../bhhapp3.html">ZodiacHell</a>
+    <a href="../compatibility/happ_compatibility_ui_v3.html">Compatibility</a>
+    <a href="bubble-shooter.html">BubbleShooter</a>
+  </div>
+
+  <div class="game-header">
+    <div class="score-panel">
+      <div class="score-label">Score</div>
+      <div class="score-value" id="scoreDisplay">0</div>
+    </div>
+    <div class="game-title">Zodiac Shooter</div>
+    <div class="next-bubble">
+      <div class="next-label">Next</div>
+      <canvas id="nextCanvas" width="50" height="50"></canvas>
+    </div>
+  </div>
+  
+  <div class="game-container">
+    <canvas id="gameCanvas" width="480" height="640"></canvas>
+    <div class="game-over-overlay" id="gameOverlay">
+      <div class="game-over-text">Game Over</div>
+      <div class="final-score" id="finalScore">0</div>
+      <button class="restart-btn" id="restartBtn">Play Again</button>
+    </div>
+  </div>
+  
+  <div class="game-info">
+    <span>Match 3+ signs to pop</span>
+  </div>
+  
+  <div class="instructions">Click or tap to shoot</div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const nextCanvas = document.getElementById('nextCanvas');
+    const nextCtx = nextCanvas.getContext('2d');
+
+    const DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    let W = 480; // logical (CSS) pixels
+    let H = 640;
+    
+    const COLS = 11;
+    const BUBBLE_RADIUS = 22;
+    const ROW_HEIGHT = BUBBLE_RADIUS * 1.73;
+    
+    // ALL 12 SIGNS INCLUDED.
+    // Colors: Gray restored (Cancer), Orange restored (Leo), ONE Blue (Aquarius).
+    const ZODIAC_SIGNS = [
+      { name: 'Aries', symbol: '\u2648\uFE0E', color: '#ff6b6b', glow: '#ff4757', text: '#c0392b' },
+      { name: 'Taurus', symbol: '\u2649\uFE0E', color: '#27ae60', glow: '#1e8449', text: '#d5f5e3' }, // Green
+      { name: 'Gemini', symbol: '\u264A\uFE0E', color: '#f1c40f', glow: '#d4ac0d', text: '#7d6608' }, // Yellow
+      { name: 'Cancer', symbol: '\u264B\uFE0E', color: '#95a5a6', glow: '#7f8c8d', text: '#2c3e50' }, // GRAY (Restored)
+      { name: 'Leo', symbol: '\u264C\uFE0E', color: '#e67e22', glow: '#d35400', text: '#fdebd0' },    // ORANGE (Restored)
+      { name: 'Virgo', symbol: '\u264D\uFE0E', color: '#a8e6cf', glow: '#6ab04c', text: '#145a32' }, // Light Green
+      { name: 'Libra', symbol: '\u264E\uFE0E', color: '#af7ac5', glow: '#884ea0', text: '#f5eef8' }, // Purple
+      { name: 'Scorpio', symbol: '\u264F\uFE0E', color: '#c0392b', glow: '#922b21', text: '#f5b7b1' }, // Dark Red
+      { name: 'Sagittarius', symbol: '\u2650\uFE0E', color: '#9b59b6', glow: '#7d3c98', text: '#f5eef8' }, // Violet
+      { name: 'Capricorn', symbol: '\u2651\uFE0E', color: '#795548', glow: '#5d4037', text: '#d7ccc8' }, // Brown
+      { name: 'Aquarius', symbol: '\u2652\uFE0E', color: '#3498db', glow: '#2980b9', text: '#ebf5fb' }, // BLUE (The only Blue)
+      { name: 'Pisces', symbol: '\u2653\uFE0E', color: '#1abc9c', glow: '#16a085', text: '#e8f8f5' }  // Teal
+    ];
+    
+    let bubbles = [];
+    let shooter = { x: W / 2, y: H - 50, angle: -Math.PI / 2 };
+    let currentBubble = null;
+    let nextBubble = null;
+    let shootingBubble = null;
+    let score = 0;
+    let gameOver = false;
+    let stars = [];
+    let particles = [];
+    let combo = 0;
+    
+    function init() {
+      bubbles = [];
+      particles = [];
+      score = 0;
+      combo = 0;
+      gameOver = false;
+      document.getElementById('gameOverlay').classList.remove('active');
+      document.getElementById('scoreDisplay').textContent = '0';
+      
+      resizeCanvases();
+      initStars();
+      initBubbles(8);
+      currentBubble = createRandomBubble();
+      nextBubble = createRandomBubble();
+      drawNextBubble();
+    }
+
+    function resizeCanvases() {
+      const maxW = Math.min(480, Math.floor(window.innerWidth - 18));
+      const maxH = Math.max(420, Math.floor(window.innerHeight - 190));
+
+      // keep aspect 480x640, fit to viewport
+      let cssW = Math.max(300, maxW);
+      let cssH = Math.floor(cssW * (640 / 480));
+      if (cssH > maxH) {
+        cssH = maxH;
+        cssW = Math.floor(cssH * (480 / 640));
+      }
+
+      canvas.style.width = cssW + 'px';
+      canvas.style.height = cssH + 'px';
+      canvas.width = Math.floor(cssW * DPR);
+      canvas.height = Math.floor(cssH * DPR);
+
+      // draw/update in logical CSS pixels
+      W = cssW;
+      H = cssH;
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+      // Keep next canvas crisp
+      const nextCss = (window.innerWidth <= 520) ? 44 : 50;
+      nextCanvas.style.width = nextCss + 'px';
+      nextCanvas.style.height = nextCss + 'px';
+      nextCanvas.width = Math.floor(nextCss * DPR);
+      nextCanvas.height = Math.floor(nextCss * DPR);
+
+      nextCtx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+      shooter.x = W / 2;
+      shooter.y = H - 50;
+    }
+
+    let _resizeTid = 0;
+    window.addEventListener('resize', () => {
+      clearTimeout(_resizeTid);
+      _resizeTid = setTimeout(() => {
+        // simplest + safest: restart on resize
+        init();
+      }, 120);
+    });
+    
+    function initStars() {
+      stars = [];
+      for (let i = 0; i < 100; i++) {
+        stars.push({
+          x: Math.random() * W,
+          y: Math.random() * H,
+          size: Math.random() * 2 + 0.5,
+          alpha: Math.random() * 0.5 + 0.3,
+          twinkleSpeed: Math.random() * 0.02 + 0.01,
+          twinklePhase: Math.random() * Math.PI * 2
+        });
+      }
+    }
+    
+    function initBubbles(rows) {
+      // Use ALL signs (first 8-10 for initial rows to not overcrowd colors)
+      // Slicing 0 to 9 ensures a good mix without being impossible
+      const activeSigns = ZODIAC_SIGNS.slice(0, 9); 
+      
+      for (let row = 0; row < rows; row++) {
+        const cols = row % 2 === 0 ? COLS : COLS - 1;
+        const offsetX = row % 2 === 0 ? BUBBLE_RADIUS : BUBBLE_RADIUS * 2;
+        
+        for (let col = 0; col < cols; col++) {
+          const x = offsetX + col * BUBBLE_RADIUS * 2;
+          const y = 60 + row * ROW_HEIGHT;
+          const signIndex = Math.floor(Math.random() * activeSigns.length);
+          
+          bubbles.push({
+            x, y,
+            row, col,
+            sign: activeSigns[signIndex],
+            scale: 1,
+            popping: false
+          });
+        }
+      }
+    }
+    
+    function createRandomBubble() {
+      // Shooter can shoot ALL signs
+      const signIndex = Math.floor(Math.random() * ZODIAC_SIGNS.length);
+      return {
+        sign: ZODIAC_SIGNS[signIndex],
+        scale: 1
+      };
+    }
+    
+    function drawBackground() {
+      const gradient = ctx.createLinearGradient(0, 0, 0, H);
+      gradient.addColorStop(0, '#0d0d1a');
+      gradient.addColorStop(0.5, '#141428');
+      gradient.addColorStop(1, '#1a1a2e');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, W, H);
+      
+      const time = Date.now() * 0.001;
+      stars.forEach(star => {
+        const twinkle = Math.sin(time * star.twinkleSpeed * 10 + star.twinklePhase) * 0.3 + 0.7;
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 250, 230, ${star.alpha * twinkle})`;
+        ctx.fill();
+      });
+      
+      ctx.strokeStyle = 'rgba(201, 169, 110, 0.1)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, H - 80);
+      ctx.lineTo(W, H - 80);
+      ctx.stroke();
+    }
+    
+    function drawBubble(x, y, sign, scale = 1, alpha = 1) {
+      const r = BUBBLE_RADIUS * scale;
+      
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      
+      // Outer Glow
+      const glowGradient = ctx.createRadialGradient(x, y, r * 0.8, x, y, r * 1.5);
+      glowGradient.addColorStop(0, sign.glow + '50');
+      glowGradient.addColorStop(1, 'transparent');
+      ctx.fillStyle = glowGradient;
+      ctx.beginPath();
+      ctx.arc(x, y, r * 1.5, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Main Bubble body
+      const bubbleGradient = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, 0, x, y, r);
+      bubbleGradient.addColorStop(0, sign.color);
+      bubbleGradient.addColorStop(0.8, sign.glow);
+      bubbleGradient.addColorStop(1, sign.glow + 'cc');
+      
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = bubbleGradient;
+      ctx.fill();
+      
+      // Symbol
+      ctx.fillStyle = sign.text || '#fff';
+      ctx.font = `bold ${r * 1.1}px "Segoe UI Symbol", "Segoe UI Historic", Arial, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      
+      ctx.shadowColor = 'rgba(0,0,0,0.3)';
+      ctx.shadowBlur = 2;
+      ctx.shadowOffsetX = 1;
+      ctx.shadowOffsetY = 1;
+      
+      ctx.fillText(sign.symbol, x, y + 1);
+      
+      ctx.restore();
+    }
+    
+    function drawShooter() {
+      const x = shooter.x;
+      const y = shooter.y;
+      
+      ctx.strokeStyle = 'rgba(201, 169, 110, 0.4)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x, y, 35, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      if (!shootingBubble && currentBubble) {
+        const aimLength = 80;
+        const endX = x + Math.cos(shooter.angle) * aimLength;
+        const endY = y + Math.sin(shooter.angle) * aimLength;
+        
+        ctx.strokeStyle = 'rgba(201, 169, 110, 0.3)';
+        ctx.setLineDash([5, 10]);
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        drawBubble(x, y, currentBubble.sign, 1);
+      }
+    }
+    
+    function drawNextBubble() {
+      nextCtx.clearRect(0, 0, 50, 50);
+      if (nextBubble) {
+        drawBubbleOnContext(nextCtx, 25, 25, nextBubble.sign, 0.9);
+      }
+    }
+    
+    function drawBubbleOnContext(context, x, y, sign, scale = 1) {
+      const r = BUBBLE_RADIUS * scale * 0.8;
+      
+      const glowGradient = context.createRadialGradient(x, y, 0, x, y, r * 1.3);
+      glowGradient.addColorStop(0, sign.glow + '60');
+      glowGradient.addColorStop(1, 'transparent');
+      context.fillStyle = glowGradient;
+      context.beginPath();
+      context.arc(x, y, r * 1.3, 0, Math.PI * 2);
+      context.fill();
+      
+      const bubbleGradient = context.createRadialGradient(x - r * 0.3, y - r * 0.3, 0, x, y, r);
+      bubbleGradient.addColorStop(0, sign.color);
+      bubbleGradient.addColorStop(1, sign.glow);
+      
+      context.beginPath();
+      context.arc(x, y, r, 0, Math.PI * 2);
+      context.fillStyle = bubbleGradient;
+      context.fill();
+      
+      context.fillStyle = sign.text || '#fff';
+      context.font = `bold ${r}px "Segoe UI Symbol", "Segoe UI Historic", Arial, sans-serif`;
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.shadowColor = 'rgba(0,0,0,0.5)';
+      context.shadowBlur = 2;
+      context.fillText(sign.symbol, x, y + 1);
+    }
+    
+    function shoot() {
+      if (shootingBubble || gameOver || !currentBubble) return;
+      
+      shootingBubble = {
+        x: shooter.x,
+        y: shooter.y,
+        vx: Math.cos(shooter.angle) * 15,
+        vy: Math.sin(shooter.angle) * 15,
+        sign: currentBubble.sign
+      };
+      
+      currentBubble = nextBubble;
+      nextBubble = createRandomBubble();
+      drawNextBubble();
+    }
+    
+    function updateShootingBubble() {
+      if (!shootingBubble) return;
+      
+      shootingBubble.x += shootingBubble.vx;
+      shootingBubble.y += shootingBubble.vy;
+      
+      if (shootingBubble.x <= BUBBLE_RADIUS || shootingBubble.x >= W - BUBBLE_RADIUS) {
+        shootingBubble.vx *= -1;
+        shootingBubble.x = Math.max(BUBBLE_RADIUS, Math.min(W - BUBBLE_RADIUS, shootingBubble.x));
+      }
+      
+      if (shootingBubble.y <= BUBBLE_RADIUS + 40) {
+        snapBubble();
+        return;
+      }
+      
+      for (let bubble of bubbles) {
+        if (bubble.popping) continue;
+        const dx = shootingBubble.x - bubble.x;
+        const dy = shootingBubble.y - bubble.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist < BUBBLE_RADIUS * 1.9) {
+          snapBubble();
+          return;
+        }
+      }
+    }
+    
+    function snapBubble() {
+      if (!shootingBubble) return;
+      
+      let bestRow = 0;
+      let bestCol = 0;
+      let minDist = Infinity;
+      
+      for (let row = 0; row < 20; row++) {
+        const rowCols = row % 2 === 0 ? COLS : COLS - 1;
+        const offsetX = row % 2 === 0 ? BUBBLE_RADIUS : BUBBLE_RADIUS * 2;
+        
+        for (let col = 0; col < rowCols; col++) {
+          const x = offsetX + col * BUBBLE_RADIUS * 2;
+          const y = 60 + row * ROW_HEIGHT;
+          
+          const dx = shootingBubble.x - x;
+          const dy = shootingBubble.y - y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          
+          const occupied = bubbles.some(b => !b.popping && Math.abs(b.x - x) < 5 && Math.abs(b.y - y) < 5);
+          
+          if (!occupied && dist < minDist && dist < BUBBLE_RADIUS * 2.5) {
+            minDist = dist;
+            bestRow = row;
+            bestCol = col;
+          }
+        }
+      }
+      
+      const finalOffsetX = bestRow % 2 === 0 ? BUBBLE_RADIUS : BUBBLE_RADIUS * 2;
+      const finalX = finalOffsetX + bestCol * BUBBLE_RADIUS * 2;
+      const finalY = 60 + bestRow * ROW_HEIGHT;
+      
+      const newBubble = {
+        x: finalX,
+        y: finalY,
+        row: bestRow,
+        col: bestCol,
+        sign: shootingBubble.sign,
+        scale: 1,
+        popping: false
+      };
+      
+      bubbles.push(newBubble);
+      shootingBubble = null;
+      
+      const matches = findMatches(newBubble);
+      if (matches.length >= 3) {
+        combo++;
+        popBubbles(matches);
+      } else {
+        combo = 0;
+        checkGameOver();
+      }
+    }
+    
+    function findMatches(startBubble) {
+      const matches = [];
+      const checked = new Set();
+      let queue = [startBubble];
+
+      while(queue.length > 0) {
+        let current = queue.shift();
+        const key = `${Math.round(current.x)},${Math.round(current.y)}`;
+        
+        if (checked.has(key)) continue;
+        checked.add(key);
+        
+        matches.push(current);
+        
+        bubbles.forEach(b => {
+          if (b.popping) return;
+          const bKey = `${Math.round(b.x)},${Math.round(b.y)}`;
+          if (checked.has(bKey)) return;
+
+          const dx = b.x - current.x;
+          const dy = b.y - current.y;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          
+          if (dist < BUBBLE_RADIUS * 2.1) {
+            if (b.sign.symbol === startBubble.sign.symbol) {
+              queue.push(b);
+            }
+          }
+        });
+      }
+      
+      return matches;
+    }
+    
+    function popBubbles(matches) {
+      const points = matches.length * 10 * combo;
+      score += points;
+      document.getElementById('scoreDisplay').textContent = score;
+      
+      matches.forEach((bubble, index) => {
+        setTimeout(() => {
+          bubble.popping = true;
+          createParticles(bubble.x, bubble.y, bubble.sign);
+        }, index * 50);
+      });
+      
+      setTimeout(() => {
+        bubbles = bubbles.filter(b => !b.popping);
+        dropFloatingBubbles();
+        checkGameOver();
+      }, matches.length * 50 + 200);
+    }
+    
+    function dropFloatingBubbles() {
+      const connected = new Set();
+      const queue = [];
+
+      bubbles.forEach(bubble => {
+        if (bubble.y < 60 + ROW_HEIGHT) {
+          const key = `${Math.round(bubble.x)},${Math.round(bubble.y)}`;
+          connected.add(key);
+          queue.push(bubble);
+        }
+      });
+      
+      while(queue.length > 0) {
+        const current = queue.shift();
+        
+        bubbles.forEach(b => {
+          const key = `${Math.round(b.x)},${Math.round(b.y)}`;
+          if (connected.has(key)) return;
+          
+          const dx = Math.abs(b.x - current.x);
+          const dy = Math.abs(b.y - current.y);
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          
+          if (dist < BUBBLE_RADIUS * 2.1) {
+            connected.add(key);
+            queue.push(b);
+          }
+        });
+      }
+      
+      const floating = bubbles.filter(b => !connected.has(`${Math.round(b.x)},${Math.round(b.y)}`));
+      floating.forEach(bubble => {
+        score += 20;
+        createParticles(bubble.x, bubble.y, bubble.sign);
+      });
+      
+      bubbles = bubbles.filter(b => connected.has(`${Math.round(b.x)},${Math.round(b.y)}`));
+      document.getElementById('scoreDisplay').textContent = score;
+    }
+    
+    function createParticles(x, y, sign) {
+      for (let i = 0; i < 12; i++) {
+        const angle = (Math.PI * 2 / 12) * i + Math.random() * 0.5;
+        const speed = 2 + Math.random() * 4;
+        particles.push({
+          x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 1,
+          decay: 0.02 + Math.random() * 0.02,
+          color: sign.color,
+          size: 3 + Math.random() * 4
+        });
+      }
+    }
+    
+    function updateParticles() {
+      particles = particles.filter(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.1;
+        p.life -= p.decay;
+        return p.life > 0;
+      });
+    }
+    
+    function drawParticles() {
+      particles.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+        ctx.fillStyle = p.color + Math.floor(p.life * 255).toString(16).padStart(2, '0');
+        ctx.fill();
+      });
+    }
+    
+    function checkGameOver() {
+      const lowestBubble = bubbles.reduce((max, b) => Math.max(max, b.y), 0);
+      if (lowestBubble > H - 120) {
+        gameOver = true;
+        document.getElementById('finalScore').textContent = score;
+        document.getElementById('gameOverlay').classList.add('active');
+      }
+    }
+    
+    function draw() {
+      drawBackground();
+      
+      bubbles.forEach(bubble => {
+        if (!bubble.popping) {
+          drawBubble(bubble.x, bubble.y, bubble.sign, bubble.scale);
+        }
+      });
+      
+      drawShooter();
+      
+      if (shootingBubble) {
+        drawBubble(shootingBubble.x, shootingBubble.y, shootingBubble.sign, 1);
+      }
+      
+      drawParticles();
+    }
+    
+    function update() {
+      if (gameOver) return;
+      
+      updateShootingBubble();
+      updateParticles();
+    }
+    
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+    
+    canvas.addEventListener('mousemove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      const dx = x - shooter.x;
+      const dy = y - shooter.y;
+      
+      shooter.angle = Math.atan2(dy, dx);
+      shooter.angle = Math.max(-Math.PI + 0.2, Math.min(-0.2, shooter.angle));
+    });
+    
+    canvas.addEventListener('click', shoot);
+    
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      const x = touch.clientX - rect.left;
+      const y = touch.clientY - rect.top;
+      
+      const dx = x - shooter.x;
+      const dy = y - shooter.y;
+      
+      shooter.angle = Math.atan2(dy, dx);
+      shooter.angle = Math.max(-Math.PI + 0.2, Math.min(-0.2, shooter.angle));
+    });
+    
+    // Fire on touchstart already; touchend is kept only to prevent scroll.
+    canvas.addEventListener('touchend', (e) => { e.preventDefault(); });
+    
+    document.getElementById('restartBtn').addEventListener('click', init);
+    
+    init();
+    gameLoop();
+  </script>
+</body>
+</html>

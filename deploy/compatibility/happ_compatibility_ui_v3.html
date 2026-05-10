@@ -1,0 +1,1084 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Happ – Horoscope Compatibility</title>
+<style>
+  :root {
+    --radius: 22px;
+    --t: 240ms;
+    --ease: cubic-bezier(.2,.8,.2,1);
+
+    /* Core palette vars (overridden by palette switcher) */
+    --accent: #7c5cff;
+    --accent2: #23d5ab;
+    --danger: #ff4d6d;
+    --warning: #ffb020;
+
+    /* Element colors (requested) */
+    --water: #3b82f6;
+    --fire: #ef4444;
+    --earth: #8b5a2b;
+    --air: #ffffff;
+
+    /* Light theme defaults (overridden by data-theme="dark") */
+    --bg0: #f7f7ff;
+    --bg1: #edf0ff;
+    --card: rgba(255,255,255,0.80);
+    --card2: rgba(255,255,255,0.95);
+    --stroke: rgba(20,25,60,0.12);
+    --text: rgba(10,12,24,0.92);
+    --muted: rgba(10,12,24,0.62);
+    --shadow: 0 24px 60px rgba(10,12,24,0.10);
+    --chipbg: rgba(10,12,24,0.05);
+    --inputbg: rgba(10,12,24,0.035);
+  }
+
+  html[data-theme="dark"] {
+    --bg0: #050615;
+    --bg1: #0a1233;
+    --card: rgba(255,255,255,0.085);
+    --card2: rgba(255,255,255,0.11);
+    --stroke: rgba(255,255,255,0.16);
+    --text: rgba(255,255,255,0.94);
+    --muted: rgba(255,255,255,0.70);
+    --shadow: 0 26px 70px rgba(0,0,0,0.30);
+    --chipbg: rgba(255,255,255,0.085);
+    --inputbg: rgba(0,0,0,0.20);
+  }
+
+  * { box-sizing:border-box; }
+  body {
+    margin: 0;
+    color: var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background: radial-gradient(1200px 900px at 15% 10%, color-mix(in oklab, var(--accent) 18%, transparent) 0%, transparent 55%),
+                radial-gradient(900px 700px at 85% 15%, color-mix(in oklab, var(--accent2) 18%, transparent) 0%, transparent 60%),
+                radial-gradient(1000px 800px at 50% 95%, color-mix(in oklab, var(--danger) 15%, transparent) 0%, transparent 65%),
+                linear-gradient(180deg, var(--bg0), var(--bg1));
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: background var(--t) var(--ease), color var(--t) var(--ease);
+  }
+
+  .topnav {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: color-mix(in oklab, var(--bg0) 70%, transparent);
+    border-bottom: 1px solid var(--stroke);
+    backdrop-filter: blur(10px);
+    flex-wrap: wrap;
+  }
+  .topnav a {
+    color: var(--text);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.35px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--stroke);
+    background: var(--chipbg);
+    transition: transform var(--t) var(--ease), background var(--t) var(--ease);
+    user-select: none;
+  }
+  .topnav a:hover { transform: translateY(-1px); background: color-mix(in oklab, var(--chipbg) 70%, white 10%); }
+
+  /* Animated background canvas */
+  #space {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.9;
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 1260px;
+    margin: 0 auto;
+    padding: 34px 18px 54px;
+  }
+
+  header {
+    display:flex;
+    flex-wrap:wrap;
+    gap: 14px 18px;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom: 18px;
+  }
+
+  .brand {
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .brandTop {
+    display:flex;
+    align-items:center;
+    gap: 14px;
+  }
+
+  .title {
+    font-size: clamp(34px, 3.6vw, 52px);
+    line-height: 1.04;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+
+  .subtitle {
+    margin: 0;
+    color: var(--muted);
+    font-size: 16px;
+    max-width: 78ch;
+  }
+
+  .actions {
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+  }
+
+  .pill {
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding: 10px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--stroke);
+    background: color-mix(in oklab, var(--card) 80%, transparent);
+    color: var(--muted);
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
+  .btn {
+    border: 1px solid var(--stroke);
+    background: color-mix(in oklab, var(--card2) 82%, transparent);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: 999px;
+    cursor:pointer;
+    font-size: 14px;
+    display:inline-flex;
+    align-items:center;
+    gap: 10px;
+    transition: transform var(--t) var(--ease), background var(--t) var(--ease), border-color var(--t) var(--ease);
+    box-shadow: 0 12px 28px rgba(0,0,0,0.08);
+  }
+  .btn:hover { transform: translateY(-1px); border-color: color-mix(in oklab, var(--accent) 35%, var(--stroke)); }
+  .btn:active { transform: translateY(0px) scale(0.98); }
+
+  .selectSmall {
+    border: 1px solid var(--stroke);
+    background: color-mix(in oklab, var(--card2) 82%, transparent);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: 999px;
+    font-size: 14px;
+    outline:none;
+  }
+  .selectSmall:focus {
+    border-color: color-mix(in oklab, var(--accent) 55%, var(--stroke));
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent) 18%, transparent);
+  }
+
+  .grid {
+    display:grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    justify-items: center; /* centers cards on wide screens */
+  }
+
+  @media (min-width: 980px) {
+    .grid { grid-template-columns: 1.15fr 1.15fr 1fr; }
+    .wide { grid-column: 1 / span 2; width: 100%; }
+  }
+
+  .card {
+    width: 100%;
+    max-width: 520px;
+    background: linear-gradient(180deg, color-mix(in oklab, var(--card) 92%, transparent), color-mix(in oklab, var(--card) 74%, transparent));
+    border: 1px solid var(--stroke);
+    border-radius: var(--radius);
+    padding: 18px 18px 16px;
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(10px);
+    transform: translateY(0);
+    transition: transform var(--t) var(--ease), border-color var(--t) var(--ease), background var(--t) var(--ease);
+  }
+  .card:hover { transform: translateY(-2px); border-color: color-mix(in oklab, var(--accent) 24%, var(--stroke)); }
+
+  .cardHead {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .chip {
+    display:inline-flex;
+    align-items:center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 14px;
+    background: var(--chipbg);
+    border: 1px solid color-mix(in oklab, var(--stroke) 85%, transparent);
+    font-weight: 900;
+    letter-spacing: 0.09em;
+    font-size: 12px;
+  }
+
+  .dot {
+    width:10px; height:10px; border-radius:999px;
+    background: var(--accent);
+    box-shadow: 0 0 0 7px color-mix(in oklab, var(--accent) 15%, transparent);
+  }
+
+  .badge {
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--stroke);
+    background: color-mix(in oklab, var(--card2) 80%, transparent);
+    font-size: 13px;
+    color: var(--muted);
+    transition: transform var(--t) var(--ease);
+  }
+  .badge.bump { transform: scale(1.06); }
+
+  .two {
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  label {
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0 0 7px;
+  }
+
+  .icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    display:grid;
+    place-items:center;
+    border: 1px solid color-mix(in oklab, var(--stroke) 90%, transparent);
+    background: color-mix(in oklab, var(--card2) 72%, transparent);
+    font-weight: 900;
+    line-height: 1;
+    font-size: 18px;
+    transition: transform var(--t) var(--ease);
+  }
+  .icon.pop { transform: scale(1.10); }
+
+  /* element tint for select wrappers */
+  .selectWrap {
+    position: relative;
+    border-radius: 16px;
+  }
+  .selectWrap::after {
+    content:"▾";
+    position:absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-45%);
+    color: color-mix(in oklab, var(--muted) 95%, transparent);
+    pointer-events:none;
+    font-size: 14px;
+  }
+  .selectWrap.tint-water select { box-shadow: 0 0 0 4px color-mix(in oklab, var(--water) 16%, transparent); border-color: color-mix(in oklab, var(--water) 40%, var(--stroke)); }
+  .selectWrap.tint-fire select  { box-shadow: 0 0 0 4px color-mix(in oklab, var(--fire) 16%, transparent);  border-color: color-mix(in oklab, var(--fire) 40%, var(--stroke)); }
+  .selectWrap.tint-earth select { box-shadow: 0 0 0 4px color-mix(in oklab, var(--earth) 18%, transparent); border-color: color-mix(in oklab, var(--earth) 45%, var(--stroke)); }
+  .selectWrap.tint-air select   { box-shadow: 0 0 0 4px color-mix(in oklab, var(--air) 12%, transparent);   border-color: color-mix(in oklab, var(--air) 30%, var(--stroke)); }
+
+  select {
+    width: 100%;
+    appearance:none;
+    padding: 14px 14px;
+    border-radius: 16px;
+    border: 1px solid color-mix(in oklab, var(--stroke) 95%, transparent);
+    background: var(--inputbg);
+    color: var(--text);
+    outline: none;
+    font-size: 15px;
+    transition: border-color var(--t) var(--ease), box-shadow var(--t) var(--ease), transform var(--t) var(--ease);
+  }
+  select:focus {
+    border-color: color-mix(in oklab, var(--accent) 55%, var(--stroke));
+    box-shadow: 0 0 0 5px color-mix(in oklab, var(--accent) 18%, transparent);
+  }
+  /* option styling is inconsistent across browsers; keep readable */
+  option { color: #111827; }
+
+  .meta {
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 13px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 10px;
+    flex-wrap:wrap;
+  }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  .score {
+    font-weight: 950;
+    font-size: 20px;
+  }
+
+  .msg {
+    margin-top: 10px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    border: 1px solid color-mix(in oklab, var(--stroke) 90%, transparent);
+    background: color-mix(in oklab, var(--card2) 70%, transparent);
+    color: color-mix(in oklab, var(--text) 92%, transparent);
+    font-size: 14px;
+    line-height: 1.38;
+    transform: translateY(0);
+    transition: transform var(--t) var(--ease), background var(--t) var(--ease), border-color var(--t) var(--ease);
+  }
+  .msg.good { border-color: color-mix(in oklab, #4ade80 28%, var(--stroke)); background: color-mix(in oklab, #4ade80 10%, var(--card2)); }
+  .msg.warn { border-color: color-mix(in oklab, var(--warning) 30%, var(--stroke)); background: color-mix(in oklab, var(--warning) 10%, var(--card2)); }
+  .msg.bad  { border-color: color-mix(in oklab, var(--danger) 26%, var(--stroke)); background: color-mix(in oklab, var(--danger) 9%, var(--card2)); }
+  .msg.bump { transform: translateY(-2px); }
+
+  /* Summary */
+  .summary {
+    max-width: 460px;
+    display:flex;
+    flex-direction:column;
+    gap: 14px;
+  }
+
+  .gauge {
+    width: 250px;
+    height: 250px;
+    border-radius: 999px;
+    margin: 8px auto 0;
+    background: conic-gradient(var(--accent) 0deg, rgba(0,0,0,0) 0deg);
+    border: 1px solid var(--stroke);
+    box-shadow: inset 0 0 0 18px color-mix(in oklab, #000 18%, transparent), var(--shadow);
+    position: relative;
+    transition: background 420ms var(--ease);
+  }
+  .gauge::after {
+    content:"";
+    position:absolute;
+    inset: 22px;
+    border-radius: 999px;
+    background: radial-gradient(circle at 35% 25%, color-mix(in oklab, var(--accent) 22%, transparent), color-mix(in oklab, #000 18%, transparent) 55%, color-mix(in oklab, #000 28%, transparent));
+    border: 1px solid color-mix(in oklab, var(--stroke) 85%, transparent);
+  }
+  .gaugeInner {
+    position:absolute;
+    inset: 0;
+    display:grid;
+    place-items:center;
+    text-align:center;
+    z-index: 2;
+  }
+  .pct {
+    font-size: 44px;
+    font-weight: 1000;
+    letter-spacing: -0.02em;
+  }
+  .pctSub {
+    margin-top: -2px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .kpis {
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .kpi {
+    border-radius: 18px;
+    border: 1px solid var(--stroke);
+    background: color-mix(in oklab, var(--card2) 72%, transparent);
+    padding: 12px 14px;
+  }
+  .kpi .k { color: var(--muted); font-size: 13px; }
+  .kpi .v { font-weight: 950; font-size: 20px; margin-top: 5px; }
+
+  .bar {
+    height: 12px;
+    width: 100%;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--muted) 16%, transparent);
+    border: 1px solid var(--stroke);
+    overflow:hidden;
+  }
+  .bar > div {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 999px;
+    transition: width 420ms var(--ease);
+  }
+
+  footer {
+    margin-top: 14px;
+    color: var(--muted);
+    font-size: 12px;
+    display:flex;
+    justify-content:space-between;
+    gap: 10px;
+    flex-wrap:wrap;
+  }
+
+  /* Easter egg overlay */
+  #easter {
+    position: fixed;
+    left: -380px;
+    top: 12vh;
+    width: 320px;
+    height: auto;
+    z-index: 999;
+    pointer-events: none;
+    opacity: 0;
+    transform: rotate(-8deg) scale(0.95);
+    filter: drop-shadow(0 18px 30px rgba(0,0,0,.45));
+  }
+  #easter.run {
+    opacity: 1;
+    animation: fly 5.4s linear forwards;
+  }
+  #easter .laugh {
+    position:absolute;
+    right: -12px;
+    top: -18px;
+    padding: 8px 10px;
+    background: rgba(0,0,0,.45);
+    border: 1px solid rgba(255,255,255,.22);
+    color: rgba(255,255,255,.9);
+    border-radius: 14px;
+    font-weight: 900;
+    letter-spacing: .02em;
+    transform: rotate(8deg);
+  }
+
+  @keyframes fly {
+    0%   { transform: translateX(0) translateY(0) rotate(-8deg) scale(0.95); opacity: 0; }
+    8%   { opacity: 1; }
+    30%  { transform: translateX(calc(60vw + 160px)) translateY(7vh) rotate(10deg) scale(1.05); }
+    60%  { transform: translateX(calc(100vw + 260px)) translateY(-8vh) rotate(-6deg) scale(1.10); }
+    100% { transform: translateX(calc(120vw + 520px)) translateY(10vh) rotate(6deg) scale(0.95); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+<canvas id="space"></canvas>
+
+<nav class="topnav" aria-label="Happ navigation">
+  <a href="../h-app.html">Home</a>
+  <a href="../bhhapp3.html">ZodiacHell</a>
+  <a href="happ_compatibility_ui_v3.html">Compatibility</a>
+  <a href="../bubble%20shooter/bubble-shooter.html">BubbleShooter</a>
+</nav>
+
+<!-- 100% Easter egg -->
+<div id="easter" aria-hidden="true">
+  <div class="laugh">MWAHAHA! 📜</div>
+  <svg viewBox="0 0 260 180" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="devg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff4d6d"/>
+      <stop offset="1" stop-color="#b00034"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="rgba(0,0,0,.5)"/>
+    </filter>
+  </defs>
+
+  <!-- Pyramid -->
+  <g filter="url(#shadow)" opacity="0.95">
+    <path d="M30 150 L120 40 L210 150 Z" fill="#b89b5a" stroke="#6b5a2c" stroke-width="4"/>
+    <path d="M120 40 L120 150" stroke="rgba(0,0,0,.25)" stroke-width="3"/>
+    <path d="M30 150 L120 110 L210 150" fill="rgba(0,0,0,.12)"/>
+    <!-- Eye -->
+    <ellipse cx="120" cy="95" rx="36" ry="18" fill="#f3f4f6" stroke="#111827" stroke-width="4"/>
+    <circle cx="120" cy="95" r="10" fill="#111827"/>
+    <circle cx="116" cy="91" r="3" fill="#f3f4f6"/>
+  </g>
+
+  <!-- Devil -->
+  <g transform="translate(160,40)" filter="url(#shadow)">
+    <path d="M25 90 C10 80 4 62 7 48 C10 30 26 20 42 24 C58 20 74 30 77 48 C80 62 74 80 59 90 C50 96 34 96 25 90Z"
+          fill="url(#devg)" stroke="#4a0015" stroke-width="4"/>
+    <!-- horns -->
+    <path d="M23 30 C15 20 12 12 15 6 C20 10 24 16 27 24" fill="none" stroke="#4a0015" stroke-width="6" stroke-linecap="round"/>
+    <path d="M61 30 C69 20 72 12 69 6 C64 10 60 16 57 24" fill="none" stroke="#4a0015" stroke-width="6" stroke-linecap="round"/>
+    <!-- eyes -->
+    <ellipse cx="30" cy="55" rx="6" ry="8" fill="#111827"/>
+    <ellipse cx="54" cy="55" rx="6" ry="8" fill="#111827"/>
+    <circle cx="28" cy="52" r="2" fill="#fff"/>
+    <circle cx="52" cy="52" r="2" fill="#fff"/>
+    <!-- grin -->
+    <path d="M28 73 C36 82 48 82 56 73" stroke="#111827" stroke-width="5" stroke-linecap="round" fill="none"/>
+    <path d="M34 74 L34 80" stroke="#111827" stroke-width="3" />
+    <path d="M50 74 L50 80" stroke="#111827" stroke-width="3" />
+    <!-- arm with book -->
+    <path d="M64 84 C82 92 94 102 96 112" stroke="#4a0015" stroke-width="7" stroke-linecap="round" fill="none"/>
+    <g transform="translate(88,102) rotate(-12)">
+      <rect x="0" y="0" width="44" height="28" rx="4" fill="#111827" stroke="#e5e7eb" stroke-width="2"/>
+      <path d="M22 2 V26" stroke="#e5e7eb" stroke-width="1.5" opacity=".7"/>
+      <text x="6" y="18" font-size="8" fill="#e5e7eb" font-family="ui-monospace,monospace">HERM</text>
+    </g>
+  </g>
+</svg>
+</div>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="brandTop">
+        <svg width="170" height="44" viewBox="0 0 170 44" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Happ logo">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="170" y2="44" gradientUnits="userSpaceOnUse">
+      <stop stop-color="var(--accent)"/>
+      <stop offset="1" stop-color="var(--accent2)"/>
+    </linearGradient>
+    <filter id="glow" x="-35%" y="-80%" width="170%" height="260%">
+      <feGaussianBlur stdDeviation="3" result="b"/>
+      <feColorMatrix in="b" type="matrix"
+        values="1 0 0 0 0
+                0 1 0 0 0
+                0 0 1 0 0
+                0 0 0 .55 0" result="c"/>
+      <feMerge><feMergeNode in="c"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <g filter="url(#glow)">
+    <path d="M16 34V10H23V19H36V10H43V34H36V25H23V34H16Z" fill="url(#g)"/>
+    <path d="M56 34V10H72.2C75.6 10 78.4 10.9 80.4 12.6C82.4 14.3 83.4 16.7 83.4 19.6C83.4 22.5 82.4 24.9 80.4 26.6C78.4 28.3 75.6 29.2 72.2 29.2H63V34H56ZM63 24.1H71.8C73.4 24.1 74.8 23.7 75.6 22.8C76.5 22 77 20.9 77 19.6C77 18.3 76.5 17.2 75.6 16.4C74.8 15.6 73.4 15.2 71.8 15.2H63V24.1Z" fill="rgba(255,255,255,0.92)"/>
+    <path d="M90 34V10H106.2C109.6 10 112.4 10.9 114.4 12.6C116.4 14.3 117.4 16.7 117.4 19.6C117.4 22.5 116.4 24.9 114.4 26.6C112.4 28.3 109.6 29.2 106.2 29.2H97V34H90ZM97 24.1H105.8C107.4 24.1 108.8 23.7 109.6 22.8C110.5 22 111 20.9 111 19.6C111 18.3 110.5 17.2 109.6 16.4C108.8 15.6 107.4 15.2 105.8 15.2H97V24.1Z" fill="rgba(255,255,255,0.92)"/>
+    <circle cx="143" cy="22" r="9.5" stroke="url(#g)" stroke-width="2.2"/>
+    <path d="M143 10L145.4 17.2H153L146.8 21.7L149.2 29L143 24.6L136.8 29L139.2 21.7L133 17.2H140.6L143 10Z" fill="url(#g)"/>
+    <path d="M156 30C162.5 27.8 166.6 23 168.6 15.8" stroke="rgba(255,255,255,0.5)" stroke-width="1.8" stroke-linecap="round"/>
+  </g>
+</svg>
+        <h1 class="title">Compatibility</h1>
+      </div>
+      <p class="subtitle">Sun • Ascendant (AS) • Moon — larger layout, palette switcher, animated space background, and element-tinted selects (Water/Fire/Earth/Air).</p>
+    </div>
+
+    <div class="actions">
+      <div class="pill">✨ Total out of 6 • INT % like Excel</div>
+
+      <select class="selectSmall" id="paletteSel" aria-label="Palette">
+        <option value="Cosmic">Cosmic</option><option value="Royal Neon">Royal Neon</option><option value="Deep Ocean">Deep Ocean</option><option value="Mono Luxe">Mono Luxe</option>
+      </select>
+
+      <button class="btn" id="themeBtn" type="button" aria-label="Toggle theme">🌙 <span id="themeLabel">Dark</span></button>
+      <button class="btn" id="shuffleBtn" type="button">🎲 Surprise</button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <section class="card">
+      <div class="cardHead">
+        <div class="chip"><span class="dot" style="background:var(--accent)"></span> SUN</div>
+        <span class="badge" id="sunBadge">—</span>
+      </div>
+
+      <div class="two">
+        <div>
+          <label for="sunA"><span class="icon" id="sunIconA">✦</span> You</label>
+          <div class="selectWrap" id="sunWrapA"><select id="sunA"></select></div>
+        </div>
+        <div>
+          <label for="sunB"><span class="icon" id="sunIconB">✦</span> Partner</label>
+          <div class="selectWrap" id="sunWrapB"><select id="sunB"></select></div>
+        </div>
+      </div>
+
+      <div class="meta">
+        <div>Combo: <span id="sunCombo" class="mono"></span></div>
+        <div>Score <span class="score"><span id="sunScore"></span> / 2</span></div>
+      </div>
+
+      <div id="sunMsg" class="msg"></div>
+    </section>
+
+    <section class="card">
+      <div class="cardHead">
+        <div class="chip"><span class="dot" style="background:var(--accent2)"></span> AS</div>
+        <span class="badge" id="asBadge">—</span>
+      </div>
+
+      <div class="two">
+        <div>
+          <label for="asA"><span class="icon" id="asIconA">✦</span> You</label>
+          <div class="selectWrap" id="asWrapA"><select id="asA"></select></div>
+        </div>
+        <div>
+          <label for="asB"><span class="icon" id="asIconB">✦</span> Partner</label>
+          <div class="selectWrap" id="asWrapB"><select id="asB"></select></div>
+        </div>
+      </div>
+
+      <div class="meta">
+        <div>Combo: <span id="asCombo" class="mono"></span></div>
+        <div>Score <span class="score"><span id="asScore"></span> / 2</span></div>
+      </div>
+
+      <div id="asMsg" class="msg"></div>
+    </section>
+
+    <aside class="card summary">
+      <div class="cardHead">
+        <div class="chip"><span class="dot" style="background:var(--warning)"></span> TOTAL</div>
+        <span class="badge" id="tierBadge">—</span>
+      </div>
+
+      <div class="gauge" id="gauge">
+        <div class="gaugeInner">
+          <div class="pct"><span id="pct"></span><span style="font-size:20px; font-weight:1000;">%</span></div>
+          <div class="pctSub"><span id="points"></span> points</div>
+        </div>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi">
+          <div class="k">Points</div>
+          <div class="v"><span id="totalPoints"></span></div>
+        </div>
+        <div class="kpi">
+          <div class="k">Compatibility</div>
+          <div class="v"><span id="totalPct"></span></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="muted" style="font-size:13px; margin-bottom:10px;">Progress</div>
+        <div class="bar"><div id="barFill"></div></div>
+      </div>
+
+      <div class="muted" style="font-size:13px;">
+        Palettes change <span class="mono">--accent</span>/<span class="mono">--accent2</span> + warning/danger.
+      </div>
+    </aside>
+
+    <section class="card wide">
+      <div class="cardHead">
+        <div class="chip"><span class="dot" style="background:var(--danger)"></span> MOON</div>
+        <span class="badge" id="moonBadge">—</span>
+      </div>
+
+      <div class="two">
+        <div>
+          <label for="moonA"><span class="icon" id="moonIconA">✦</span> You</label>
+          <div class="selectWrap" id="moonWrapA"><select id="moonA"></select></div>
+        </div>
+        <div>
+          <label for="moonB"><span class="icon" id="moonIconB">✦</span> Partner</label>
+          <div class="selectWrap" id="moonWrapB"><select id="moonB"></select></div>
+        </div>
+      </div>
+
+      <div class="meta">
+        <div>Combo: <span id="moonCombo" class="mono"></span></div>
+        <div>Score <span class="score"><span id="moonScore"></span> / 2</span></div>
+      </div>
+
+      <div id="moonMsg" class="msg"></div>
+
+      <footer>
+        <div>Dropdown tint follows element group: Water (blue), Fire (red), Earth (brown), Air (white).</div>
+        <div class="mono">Easter egg triggers on 100% (can remove later)</div>
+      </footer>
+    </section>
+  </div>
+</div>
+
+<script>
+  // Data extracted from your workbook (Sheet2)
+  const SIGNS = ["Aquarius", "Aries", "Cancer", "Capricorn", "Gemini", "Leo", "Libra", "Pisces", "Sagittarius", "Scorpio", "Taurus", "Virgo"];
+  const SCORE_MAP = {"Aquarius + Aquarius": 0, "Aquarius + Aries": 1, "Aquarius + Cancer": 0, "Aquarius + Capricorn": 0, "Aquarius + Gemini": 1, "Aquarius + Leo": 1, "Aquarius + Libra": 2, "Aquarius + Pisces": 0, "Aquarius + Sagittarius": 1, "Aquarius + Scorpio": 0, "Aquarius + Taurus": 0, "Aquarius + Virgo": 0, "Aries + Aquarius": 1, "Aries + Aries": 0, "Aries + Cancer": 0, "Aries + Capricorn": 0, "Aries + Gemini": 1, "Aries + Leo": 2, "Aries + Libra": 1, "Aries + Pisces": 0, "Aries + Sagittarius": 1, "Aries + Scorpio": 0, "Aries + Taurus": 0, "Aries + Virgo": 0, "Cancer + Aquarius": 0, "Cancer + Aries": 0, "Cancer + Cancer": 0, "Cancer + Capricorn": 1, "Cancer + Gemini": 0, "Cancer + Leo": 0, "Cancer + Libra": 0, "Cancer + Pisces": 1, "Cancer + Sagittarius": 0, "Cancer + Scorpio": 1, "Cancer + Taurus": 2, "Cancer + Virgo": 1, "Capricorn + Aquarius": 0, "Capricorn + Aries": 0, "Capricorn + Cancer": 1, "Capricorn + Capricorn": 0, "Capricorn + Gemini": 0, "Capricorn + Leo": 0, "Capricorn + Libra": 0, "Capricorn + Pisces": 1, "Capricorn + Sagittarius": 0, "Capricorn + Scorpio": 1, "Capricorn + Taurus": 2, "Capricorn + Virgo": 1, "Gemini + Aquarius": 1, "Gemini + Aries": 1, "Gemini + Cancer": 0, "Gemini + Capricorn": 0, "Gemini + Gemini": 0, "Gemini + Leo": 1, "Gemini + Libra": 2, "Gemini + Pisces": 0, "Gemini + Sagittarius": 1, "Gemini + Scorpio": 0, "Gemini + Taurus": 0, "Gemini + Virgo": 0, "Leo + Aquarius": 1, "Leo + Aries": 2, "Leo + Cancer": 0, "Leo + Capricorn": 0, "Leo + Gemini": 1, "Leo + Leo": 0, "Leo + Libra": 1, "Leo + Pisces": 0, "Leo + Sagittarius": 1, "Leo + Scorpio": 0, "Leo + Taurus": 0, "Leo + Virgo": 0, "Libra + Aquarius": 2, "Libra + Aries": 1, "Libra + Cancer": 0, "Libra + Capricorn": 0, "Libra + Gemini": 1, "Libra + Leo": 1, "Libra + Libra": 0, "Libra + Pisces": 0, "Libra + Sagittarius": 1, "Libra + Scorpio": 0, "Libra + Taurus": 0, "Libra + Virgo": 0, "Pisces + Aquarius": 0, "Pisces + Aries": 0, "Pisces + Cancer": 1, "Pisces + Capricorn": 1, "Pisces + Gemini": 0, "Pisces + Leo": 0, "Pisces + Libra": 0, "Pisces + Pisces": 0, "Pisces + Sagittarius": 0, "Pisces + Scorpio": 2, "Pisces + Taurus": 1, "Pisces + Virgo": 1, "Sagittarius + Aquarius": 1, "Sagittarius + Aries": 1, "Sagittarius + Cancer": 0, "Sagittarius + Capricorn": 0, "Sagittarius + Gemini": 1, "Sagittarius + Leo": 1, "Sagittarius + Libra": 2, "Sagittarius + Pisces": 0, "Sagittarius + Sagittarius": 0, "Sagittarius + Scorpio": 0, "Sagittarius + Taurus": 0, "Sagittarius + Virgo": 0, "Scorpio + Aquarius": 0, "Scorpio + Aries": 0, "Scorpio + Cancer": 1, "Scorpio + Capricorn": 1, "Scorpio + Gemini": 0, "Scorpio + Leo": 0, "Scorpio + Libra": 0, "Scorpio + Pisces": 2, "Scorpio + Sagittarius": 0, "Scorpio + Scorpio": 0, "Scorpio + Taurus": 1, "Scorpio + Virgo": 1, "Taurus + Aquarius": 0, "Taurus + Aries": 0, "Taurus + Cancer": 2, "Taurus + Capricorn": 1, "Taurus + Gemini": 0, "Taurus + Leo": 0, "Taurus + Libra": 0, "Taurus + Pisces": 1, "Taurus + Sagittarius": 0, "Taurus + Scorpio": 1, "Taurus + Taurus": 0, "Taurus + Virgo": 1, "Virgo + Aquarius": 0, "Virgo + Aries": 0, "Virgo + Cancer": 2, "Virgo + Capricorn": 1, "Virgo + Gemini": 0, "Virgo + Leo": 0, "Virgo + Libra": 0, "Virgo + Pisces": 1, "Virgo + Sagittarius": 0, "Virgo + Scorpio": 1, "Virgo + Taurus": 1, "Virgo + Virgo": 0};
+  const SUN_MSG = {"0": "Eh... move along... Nothing to see here... You got a Sun mismatch...", "1": "You got a strong Sun Sign Match! ", "2": "CONGRATULATIONS! You got the PERFECT Sun Sign Match! Regardless of the result you should give it a try!"};
+  const AS_MSG = {"0": "Oh... You got an AS mismatch. But if it's compatible with the Moon, it could be still worth a shot!", "1": "You got a strong AS Sign Match! ", "2": "CONGRATULATIONS! You got the PERFECT AS Sign Match!"};
+  const MOON_MSG = {"0": "You got an Moon mismatch, not terrible, not great. But if it's compatible with the AS, it's still worth a shot!", "1": "You got a strong Moon Sign Match! ", "2": "CONGRATULATIONS! You got the PERFECT Moon Sign Match!"};
+
+  const ZOD = {"Aries": "\u2648", "Taurus": "\u2649", "Gemini": "\u264a", "Cancer": "\u264b", "Leo": "\u264c", "Virgo": "\u264d", "Libra": "\u264e", "Scorpio": "\u264f", "Sagittarius": "\u2650", "Capricorn": "\u2651", "Aquarius": "\u2652", "Pisces": "\u2653"};
+  const ELEMENT = {"Aries": "Fire", "Leo": "Fire", "Sagittarius": "Fire", "Taurus": "Earth", "Virgo": "Earth", "Capricorn": "Earth", "Gemini": "Air", "Libra": "Air", "Aquarius": "Air", "Cancer": "Water", "Scorpio": "Water", "Pisces": "Water"};
+  const PALETTES = {"Cosmic": {"accent": "#7c5cff", "accent2": "#23d5ab", "danger": "#ff4d6d", "warning": "#ffb020"}, "Royal Neon": {"accent": "#6d5efc", "accent2": "#20c997", "danger": "#ff3d81", "warning": "#ffd166"}, "Deep Ocean": {"accent": "#3b82f6", "accent2": "#06b6d4", "danger": "#f43f5e", "warning": "#f59e0b"}, "Mono Luxe": {"accent": "#111827", "accent2": "#a78bfa", "danger": "#ef4444", "warning": "#fbbf24"}};
+
+  function fillSelect(sel, defaultValue) {
+    sel.innerHTML = "";
+    for (const s of SIGNS) {
+      const opt = document.createElement("option");
+      opt.value = s;
+      opt.textContent = s;
+      sel.appendChild(opt);
+    }
+    sel.value = defaultValue || SIGNS[0];
+  }
+
+  function comboKey(a,b) { return `${a} + ${b}`; }
+  function lookupScore(key) {
+    const v = SCORE_MAP[key];
+    return (v === undefined || v === null) ? 0 : Number(v);
+  }
+  function excelInt(n) { return Math.floor(n); }
+  function setText(id, txt) { document.getElementById(id).textContent = txt; }
+
+  function vibeLabel(score) {
+    if (score >= 2) return ["Perfect", "good"];
+    if (score === 1) return ["Strong", "warn"];
+    return ["Mismatch", "bad"];
+  }
+
+  function applyMsg(el, msg, score) {
+    el.textContent = msg || "";
+    el.classList.remove("good","warn","bad","bump");
+    el.classList.add(vibeLabel(score)[1]);
+    requestAnimationFrame(() => {
+      el.classList.add("bump");
+      setTimeout(() => el.classList.remove("bump"), 260);
+    });
+  }
+
+  function pop(el) {
+    if (!el) return;
+    el.classList.remove("pop");
+    requestAnimationFrame(() => {
+      el.classList.add("pop");
+      setTimeout(() => el.classList.remove("pop"), 240);
+    });
+  }
+
+  function bumpBadge(el) {
+    if (!el) return;
+    el.classList.remove("bump");
+    requestAnimationFrame(() => {
+      el.classList.add("bump");
+      setTimeout(() => el.classList.remove("bump"), 240);
+    });
+  }
+
+  function elementClass(sign) {
+    const e = ELEMENT[sign] || "";
+    if (e === "Water") return "tint-water";
+    if (e === "Fire") return "tint-fire";
+    if (e === "Earth") return "tint-earth";
+    if (e === "Air") return "tint-air";
+    return "";
+  }
+
+  function setWrapTint(wrapEl, sign) {
+    wrapEl.classList.remove("tint-water","tint-fire","tint-earth","tint-air");
+    const cls = elementClass(sign);
+    if (cls) wrapEl.classList.add(cls);
+  }
+
+  function setZodiacIcon(iconEl, sign) {
+    const sym = ZOD[sign] || "✦";
+    iconEl.textContent = sym;
+    pop(iconEl);
+  }
+
+  function animateNumber(el, to, duration=440) {
+    const from = Number(el.textContent || 0);
+    const start = performance.now();
+    function easeOutCubic(p) { return 1 - Math.pow(1-p, 3); }
+    function tick(now) {
+      const p = Math.min(1, (now - start)/duration);
+      const v = Math.round(from + (to - from) * easeOutCubic(p));
+      el.textContent = v;
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  let easterLocked = false;
+  function triggerEasterEgg() {
+    if (easterLocked) return;
+    easterLocked = true;
+    const el = document.getElementById("easter");
+    el.classList.remove("run");
+    // restart animation reliably
+    void el.offsetWidth;
+    el.classList.add("run");
+    setTimeout(() => {
+      el.classList.remove("run");
+      easterLocked = false;
+    }, 5600);
+  }
+
+  function render() {
+    const sunA = document.getElementById("sunA").value;
+    const sunB = document.getElementById("sunB").value;
+    const asA = document.getElementById("asA").value;
+    const asB = document.getElementById("asB").value;
+    const moonA = document.getElementById("moonA").value;
+    const moonB = document.getElementById("moonB").value;
+
+    setZodiacIcon(document.getElementById("sunIconA"), sunA);
+    setZodiacIcon(document.getElementById("sunIconB"), sunB);
+    setZodiacIcon(document.getElementById("asIconA"), asA);
+    setZodiacIcon(document.getElementById("asIconB"), asB);
+    setZodiacIcon(document.getElementById("moonIconA"), moonA);
+    setZodiacIcon(document.getElementById("moonIconB"), moonB);
+
+    setWrapTint(document.getElementById("sunWrapA"), sunA);
+    setWrapTint(document.getElementById("sunWrapB"), sunB);
+    setWrapTint(document.getElementById("asWrapA"), asA);
+    setWrapTint(document.getElementById("asWrapB"), asB);
+    setWrapTint(document.getElementById("moonWrapA"), moonA);
+    setWrapTint(document.getElementById("moonWrapB"), moonB);
+
+    const sunK = comboKey(sunA, sunB);
+    const asK = comboKey(asA, asB);
+    const moonK = comboKey(moonA, moonB);
+
+    const sunScore = lookupScore(sunK);
+    const asScore = lookupScore(asK);
+    const moonScore = lookupScore(moonK);
+
+    setText("sunCombo", sunK);
+    setText("asCombo", asK);
+    setText("moonCombo", moonK);
+
+    setText("sunScore", sunScore);
+    setText("asScore", asScore);
+    setText("moonScore", moonScore);
+
+    const sunBadge = document.getElementById("sunBadge");
+    const asBadge = document.getElementById("asBadge");
+    const moonBadge = document.getElementById("moonBadge");
+
+    sunBadge.textContent = vibeLabel(sunScore)[0];
+    asBadge.textContent = vibeLabel(asScore)[0];
+    moonBadge.textContent = vibeLabel(moonScore)[0];
+    bumpBadge(sunBadge); bumpBadge(asBadge); bumpBadge(moonBadge);
+
+    applyMsg(document.getElementById("sunMsg"), SUN_MSG[String(sunScore)] ?? "", sunScore);
+    applyMsg(document.getElementById("asMsg"), AS_MSG[String(asScore)] ?? "", asScore);
+    applyMsg(document.getElementById("moonMsg"), MOON_MSG[String(moonScore)] ?? "", moonScore);
+
+    const total = sunScore + asScore + moonScore; // out of 6
+    const pctInt = excelInt((total/6) * 100); // 0..100
+
+    setText("totalPoints", `${total}/6`);
+    setText("points", `${total}/6`);
+    setText("totalPct", `${pctInt}/100`);
+    animateNumber(document.getElementById("pct"), pctInt, 520);
+
+    const deg = Math.max(0, Math.min(360, (pctInt/100) * 360));
+    const gauge = document.getElementById("gauge");
+    gauge.style.background = `conic-gradient(var(--accent) 0deg, var(--accent2) ${deg}deg, color-mix(in oklab, var(--muted) 18%, transparent) ${deg}deg)`;
+    document.getElementById("barFill").style.width = `${pctInt}%`;
+
+    let tier = "Low";
+    if (pctInt >= 84) tier = "Cosmic";
+    else if (pctInt >= 67) tier = "High";
+    else if (pctInt >= 50) tier = "Medium";
+    const tierBadge = document.getElementById("tierBadge");
+    tierBadge.textContent = tier;
+    bumpBadge(tierBadge);
+
+    if (pctInt === 100) {
+      triggerEasterEgg();
+    }
+  }
+
+  function applyPalette(name) {
+    const p = PALETTES[name] || PALETTES["Cosmic"];
+    const r = document.documentElement;
+    r.style.setProperty("--accent", p.accent);
+    r.style.setProperty("--accent2", p.accent2);
+    r.style.setProperty("--danger", p.danger);
+    r.style.setProperty("--warning", p.warning);
+    localStorage.setItem("happ_palette", name);
+  }
+
+  function initTheme() {
+    const root = document.documentElement;
+    const saved = localStorage.getItem("happ_theme");
+    const initial = saved || "dark";
+    root.setAttribute("data-theme", initial);
+
+    const label = document.getElementById("themeLabel");
+    const btn = document.getElementById("themeBtn");
+    label.textContent = initial === "dark" ? "Dark" : "Light";
+    btn.firstChild.textContent = initial === "dark" ? "🌙 " : "☀️ ";
+
+    btn.addEventListener("click", () => {
+      const cur = root.getAttribute("data-theme") || "dark";
+      const nxt = cur === "dark" ? "light" : "dark";
+      root.setAttribute("data-theme", nxt);
+      localStorage.setItem("happ_theme", nxt);
+      label.textContent = nxt === "dark" ? "Dark" : "Light";
+      btn.firstChild.textContent = nxt === "dark" ? "🌙 " : "☀️ ";
+    });
+  }
+
+  function randSign() {
+    return SIGNS[Math.floor(Math.random()*SIGNS.length)];
+  }
+
+  function wire() {
+    const defaults = {
+      sunA: "Scorpio", sunB: "Cancer",
+      asA: "Leo", asB: "Pisces",
+      moonA: "Libra", moonB: "Cancer"
+    };
+
+    for (const id of ["sunA","sunB","asA","asB","moonA","moonB"]) {
+      const el = document.getElementById(id);
+      fillSelect(el, defaults[id] || SIGNS[0]);
+      el.addEventListener("change", render);
+    }
+
+    initTheme();
+
+    const palSel = document.getElementById("paletteSel");
+    const savedPal = localStorage.getItem("happ_palette") || "Cosmic";
+    palSel.value = savedPal;
+    applyPalette(savedPal);
+    palSel.addEventListener("change", () => {
+      applyPalette(palSel.value);
+      render();
+    });
+
+    document.getElementById("shuffleBtn").addEventListener("click", () => {
+      document.getElementById("sunA").value = randSign();
+      document.getElementById("sunB").value = randSign();
+      document.getElementById("asA").value = randSign();
+      document.getElementById("asB").value = randSign();
+      document.getElementById("moonA").value = randSign();
+      document.getElementById("moonB").value = randSign();
+      render();
+    });
+
+    render();
+  }
+
+  // Animated space background (stars + planets)
+  function initSpace() {
+    const canvas = document.getElementById("space");
+    const ctx = canvas.getContext("2d");
+    let w=0,h=0, dpr=1;
+
+    function resize() {
+      dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      w = canvas.clientWidth = window.innerWidth;
+      h = canvas.clientHeight = window.innerHeight;
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+    }
+    window.addEventListener("resize", resize);
+    resize();
+
+    const rand = (a,b)=>a+Math.random()*(b-a);
+
+    // stars
+    const starCount = Math.min(520, Math.floor((w*h)/2800));
+    const stars = Array.from({length: starCount}, () => {
+      const z = rand(0.2, 1.0);
+      return {
+        x: rand(0, w),
+        y: rand(0, h),
+        r: rand(0.5, 1.6) * z,
+        a: rand(0.25, 0.95),
+        tw: rand(0.004, 0.018),
+        z
+      };
+    });
+
+    // planets (soft, realistic-ish spheres)
+    const planets = [
+      { x: w*0.18, y: h*0.78, r: Math.min(w,h)*0.10, hue: 215, drift: 0.010, z: 0.25 },
+      { x: w*0.84, y: h*0.28, r: Math.min(w,h)*0.07, hue: 165, drift: 0.013, z: 0.35 },
+      { x: w*0.62, y: h*0.62, r: Math.min(w,h)*0.045, hue: 320, drift: 0.016, z: 0.45 },
+    ];
+
+    let t = 0;
+
+    function drawPlanet(p) {
+      // gradient sphere
+      const g = ctx.createRadialGradient(p.x - p.r*0.35, p.y - p.r*0.35, p.r*0.2, p.x, p.y, p.r);
+      g.addColorStop(0, `hsla(${p.hue}, 80%, 65%, 0.22)`);
+      g.addColorStop(0.55, `hsla(${p.hue}, 70%, 45%, 0.12)`);
+      g.addColorStop(1, `hsla(${p.hue}, 80%, 20%, 0.06)`);
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      ctx.fill();
+
+      // subtle ring for one planet
+      if (p === planets[1]) {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(-0.35);
+        ctx.strokeStyle = "rgba(255,255,255,0.06)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, p.r*1.45, p.r*0.55, 0, 0, Math.PI*2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    function frame() {
+      t += 1;
+      ctx.clearRect(0,0,w,h);
+
+      // stars
+      for (const s of stars) {
+        const tw = 0.6 + 0.4*Math.sin((t*s.tw) + s.x*0.01);
+        const a = s.a * tw;
+        ctx.fillStyle = `rgba(255,255,255,${a})`;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+        ctx.fill();
+
+        // drift
+        s.x += 0.02 * s.z;
+        s.y += 0.01 * s.z;
+        if (s.x > w+5) s.x = -5;
+        if (s.y > h+5) s.y = -5;
+      }
+
+      // planets
+      for (const p of planets) {
+        p.x += p.drift * (0.6 + p.z);
+        p.y += p.drift * 0.4;
+        if (p.x - p.r > w + 50) p.x = -p.r - 50;
+        if (p.y - p.r > h + 50) p.y = -p.r - 50;
+        drawPlanet(p);
+      }
+
+      requestAnimationFrame(frame);
+    }
+    frame();
+  }
+
+  wire();
+  initSpace();
+</script>
+</body>
+</html>

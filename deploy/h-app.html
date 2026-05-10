@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="hr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>H-App</title>
+  <style>
+    :root {
+      --bg0: #050615;
+      --bg1: #0a1233;
+      --card: rgba(255,255,255,0.085);
+      --stroke: rgba(255,255,255,0.14);
+      --text: rgba(255,255,255,0.94);
+      --muted: rgba(255,255,255,0.72);
+      --shadow: 0 26px 70px rgba(0,0,0,0.30);
+      --t: 200ms;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(1200px 900px at 12% 12%, rgba(124,92,255,0.22) 0%, transparent 55%),
+        radial-gradient(900px 700px at 88% 16%, rgba(35,213,171,0.20) 0%, transparent 60%),
+        radial-gradient(900px 900px at 50% 95%, rgba(255,77,109,0.14) 0%, transparent 65%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-x: hidden;
+    }
+
+    .topnav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: rgba(0,0,0,0.38);
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+      backdrop-filter: blur(10px);
+    }
+    .topnav a {
+      color: #f4f2ff;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.35px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      transition: background var(--t) var(--ease), transform .06s ease;
+      user-select: none;
+    }
+    .topnav a:hover { background: rgba(255,255,255,0.10); transform: translateY(-1px); }
+    .topnav a[aria-current="page"] { background: rgba(255,255,255,0.12); }
+
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 26px 16px 40px;
+    }
+    header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 14px;
+      margin: 18px 0 18px;
+      flex-wrap: wrap;
+    }
+    h1 {
+      margin: 0;
+      font-size: 34px;
+      letter-spacing: 0.6px;
+    }
+    .sub {
+      margin: 0;
+      color: var(--muted);
+      font-weight: 650;
+      letter-spacing: 0.2px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--stroke);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 170px;
+    }
+    .card h2 {
+      margin: 0;
+      font-size: 16px;
+      letter-spacing: 0.3px;
+    }
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      font-weight: 650;
+      line-height: 1.35;
+      font-size: 13px;
+    }
+    .actions {
+      margin-top: auto;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 800;
+      letter-spacing: 0.25px;
+      transition: background var(--t) var(--ease), transform .06s ease;
+      user-select: none;
+    }
+    .btn:hover { background: rgba(255,255,255,0.10); transform: translateY(-1px); }
+    .btn.primary {
+      background: rgba(124,92,255,0.22);
+      border-color: rgba(124,92,255,0.40);
+    }
+    .btn.primary:hover { background: rgba(124,92,255,0.28); }
+
+    .hint {
+      margin-top: 16px;
+      color: rgba(255,255,255,0.62);
+      font-size: 12px;
+      font-weight: 650;
+    }
+    .kbd {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.90);
+      font-weight: 800;
+      letter-spacing: 0.2px;
+    }
+  </style>
+</head>
+<body>
+  <nav class="topnav" aria-label="H-App navigation">
+    <a href="h-app.html" aria-current="page">Home</a>
+    <a href="bhhapp3.html">ZodiacHell</a>
+    <a href="compatibility/happ_compatibility_ui_v3.html">Compatibility</a>
+    <a href="bubble%20shooter/bubble-shooter.html">BubbleShooter</a>
+  </nav>
+
+  <div class="wrap">
+    <header>
+      <h1>H-App</h1>
+      <p class="sub">Jedan mali svemir: kompatibilnost + dvije igre.</p>
+    </header>
+
+    <section class="grid" aria-label="Modules">
+      <article class="card">
+        <h2>ZodiacHell (bullet hell)</h2>
+        <p>Brz, kaotican i precizan. Auto-fire cilja prema misu, valovi i bossovi po sazvijezdima.</p>
+        <div class="actions">
+          <a class="btn primary" href="bhhapp3.html">Start</a>
+          <a class="btn" href="bullet%20hell/bullet%20hell%20happ1.html">Alt verzija</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>Compatibility</h2>
+        <p>Horoscope compatibility UI. Brzo isprobaj znakove i kombinacije.</p>
+        <div class="actions">
+          <a class="btn primary" href="compatibility/happ_compatibility_ui_v3.html">Open</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>BubbleShooter</h2>
+        <p>Zodiac bubble shooter. Lagani “zen” mode uz score.</p>
+        <div class="actions">
+          <a class="btn primary" href="bubble%20shooter/bubble-shooter.html">Start</a>
+        </div>
+      </article>
+    </section>
+
+    <p class="hint">Tip: u ZodiacHell pauza je <span class="kbd">P</span>, dash <span class="kbd">Shift</span>, bomba <span class="kbd">E</span>.</p>
+  </div>
+</body>
+</html>
